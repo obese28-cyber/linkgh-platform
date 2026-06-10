@@ -1,0 +1,30 @@
+name       = "linkgh-jobs-worker"
+main       = "src/worker.ts"
+account_id = "YOUR_CLOUDFLARE_ACCOUNT_ID"
+
+compatibility_date    = "2024-01-01"
+compatibility_flags   = ["nodejs_compat"]
+
+# ── D1 database binding ───────────────────────────────────────────────────────
+[[d1_databases]]
+binding      = "DB"
+database_name = "linkgh-db"
+database_id  = "YOUR_D1_DATABASE_ID"
+
+# ── Cron: run ingestion daily at 06:00 UTC ────────────────────────────────────
+[triggers]
+crons = ["0 6 * * *"]
+
+# ── Environment variables (set secrets via wrangler secret put) ───────────────
+[vars]
+JSEARCH_API_HOST = "jsearch.p.rapidapi.com"
+ENVIRONMENT      = "production"
+
+# ── Local dev environment ─────────────────────────────────────────────────────
+[env.dev]
+vars = { ENVIRONMENT = "development" }
+
+# ── Routes ────────────────────────────────────────────────────────────────────
+[[routes]]
+pattern = "linkgh.com/api/*"
+zone_name = "linkgh.com"
