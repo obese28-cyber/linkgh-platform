@@ -1,0 +1,122 @@
+[
+  {
+    "id": 1,
+    "title": "Senior Accountant",
+    "company": "Deloitte Ghana",
+    "location": "Accra",
+    "category": "Accounting",
+    "type": "Full-time",
+    "verified": true,
+    "applyUrl": "https://www.deloitte.com/gh/en/careers.html"
+  },
+  {
+    "id": 2,
+    "title": "Finance Analyst",
+    "company": "Ecobank Ghana",
+    "location": "Accra",
+    "category": "Finance",
+    "type": "Full-time",
+    "verified": true,
+    "applyUrl": "https://www.ecobank.com/group/careers"
+  },
+  {
+    "id": 3,
+    "title": "Network Engineer",
+    "company": "MTN Ghana",
+    "location": "Accra",
+    "category": "Technology",
+    "type": "Full-time",
+    "verified": true,
+    "applyUrl": "https://www.mtn.com/careers/"
+  },
+  {
+    "id": 4,
+    "title": "Tax Associate",
+    "company": "KPMG Ghana",
+    "location": "Accra",
+    "category": "Tax",
+    "type": "Full-time",
+    "verified": true,
+    "applyUrl": "https://kpmg.com/gh/en/home/careers.html"
+  },
+  {
+    "id": 5,
+    "title": "Medical Officer",
+    "company": "Korle Bu Teaching Hospital",
+    "location": "Accra",
+    "category": "Healthcare",
+    "type": "Full-time",
+    "verified": true,
+    "applyUrl": "https://kbth.gov.gh/"
+  },
+  {
+    "id": 6,
+    "title": "Software Engineer",
+    "company": "Hubtel",
+    "location": "Remote",
+    "category": "Technology",
+    "type": "Full-time",
+    "verified": true,
+    "applyUrl": "https://hubtel.com/careers"
+  },
+  {
+    "id": 7,
+    "title": "HR Manager",
+    "company": "FanMilk Ghana",
+    "location": "Tema",
+    "category": "Administration",
+    "type": "Full-time",
+    "verified": true,
+    "applyUrl": "https://fanmilk-gh.com/"
+  },
+  {
+    "id": 8,
+    "title": "Civil Engineer",
+    "company": "Consar LTD",
+    "location": "Kumasi",
+    "category": "Engineering",
+    "type": "Full-time",
+    "verified": true,
+    "applyUrl": "https://consar.com.gh/"
+  },
+  {
+    "id": 9,
+    "title": "Audit Associate",
+    "company": "PwC Ghana",
+    "location": "Accra",
+    "category": "Audit",
+    "type": "Full-time",
+    "verified": true,
+    "applyUrl": "https://www.pwc.com/gh/en/careers.html"
+  },
+  {
+    "id": 10,
+    "title": "Customer Support Officer",
+    "company": "Telecel Ghana",
+    "location": "Accra",
+    "category": "Customer Service",
+    "type": "Full-time",
+    "verified": true,
+    "applyUrl": "https://telecel.com.gh/"
+  },
+  {
+    "id": 11,
+    "title": "Investment Analyst",
+    "company": "Absa Ghana",
+    "location": "Accra",
+    "category": "Finance",
+    "type": "Full-time",
+    "verified": true,
+    "applyUrl": "https://absa.africa/ghana/careers/"
+  },
+  {
+    "id": 12,
+    "title": "Treasury Officer",
+    "company": "CalBank",
+    "location": "Accra",
+    "category": "Finance",
+    "type": "Full-time",
+    "verified": true,
+    "applyUrl": "https://calbank.net/careers/"
+  }
+]

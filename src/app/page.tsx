@@ -1,11 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import "./globals.css";
+import { supabase } from "@/lib/supabase";
 
-/* ══════════════════════════════════════════════════════════════════════════
-   TYPES & STRICT DATA STRUCTURE INTERFACES
-══════════════════════════════════════════════════════════════════════════ */
 type Page = "home" | "professionals" | "feed";
 
 interface MockJob {
@@ -29,7 +27,7 @@ interface Professional {
   connections: number;
   accentKey: number;
   avatarSeed: string;
-  avatarImg: string; // Mapped to your local images folder
+  avatarImg: string;
   location: string;
   skills: string[];
 }
@@ -49,7 +47,7 @@ interface BodyUpdate {
 interface CredentialBody {
   name: string;
   label: string;
-  logoImg: string; // Mapped to your local frameworks folder
+  logoImg: string;
   domain: string | null;
   type: string;
 }
@@ -65,9 +63,6 @@ interface FeedPost {
   author: string;
 }
 
-/* ══════════════════════════════════════════════════════════════════════════
-   STATIC DATA STORES & PLATFORM VARIABLES
-══════════════════════════════════════════════════════════════════════════ */
 const CATEGORIES: string[] = [
   "All", "Accounting", "Finance", "Banking", "Bookkeeping", "Audit", "Tax",
   "Administration", "Customer Service", "Sales & Marketing", "Technology",
@@ -75,7 +70,7 @@ const CATEGORIES: string[] = [
   "Logistics", "Hospitality", "Remote Jobs", "Other Jobs"
 ];
 
-const MOCK_JOBS: MockJob[] = [
+const FALLBACK_JOBS: MockJob[] = [
   { id: 1, title: "Senior Accountant", company: "Deloitte Ghana", location: "Accra", jobType: "Full-time", salary: "GHS 4,500–6,000/mo", deadline: "6 days left", applyUrl: "#", isVerified: true, category: "Accounting", featured: true },
   { id: 2, title: "Accounts Officer", company: "Ghana Water Company", location: "Accra", jobType: "Full-time", salary: "GHS 3,200–4,500/mo", deadline: "10 days left", applyUrl: "#", isVerified: true, category: "Accounting", featured: false },
   { id: 3, title: "Bookkeeper", company: "RMG Ghana", location: "Tema", jobType: "Full-time", salary: "GHS 2,800–3,500/mo", deadline: "5 days left", applyUrl: "#", isVerified: false, category: "Bookkeeping", featured: false },
@@ -121,9 +116,6 @@ const FEED_POSTS: FeedPost[] = [
   { category: "Compliance", title: "GRA's new filing rules and what professionals need to know", body: "The Ghana Revenue Authority has updated key requirements for corporate filings. Finance and tax professionals need to act now.", readTime: "6 min read", tag: null, likes: 187, shares: 53, author: "Emmanuel Owusu" },
 ];
 
-/* ══════════════════════════════════════════════════════════════════════════
-   HELPERS & VISUAL TOKENS
-══════════════════════════════════════════════════════════════════════════ */
 const ACCENTS = ["#0A79A4", "#7367AF", "#219777"] as const;
 
 const BACKGROUND_IMAGES: Record<Page, string> = {
@@ -177,9 +169,6 @@ function PageHero({ meshKey, minHeight, children }: { meshKey: Page; minHeight: 
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════════════
-   REUSABLE INTERACTIVE MICRO-COMPONENTS
-══════════════════════════════════════════════════════════════════════════ */
 function GlowBar() {
   return (
     <div className="glow-bar" aria-hidden="true" style={{ display: "flex", width: "100%", height: "2px", overflow: "hidden", position: "relative" }}>
@@ -217,11 +206,29 @@ function SearchIcon() {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════════════
-   MODULAR BLOCK ARCHITECTURES (GLASS CARDS)
-══════════════════════════════════════════════════════════════════════════ */
 function JobCard({ job, accent }: { job: MockJob; accent: string }) {
   const [saved, setSaved] = useState<boolean>(false);
+
+  useEffect(() => {
+    const savedJobs = JSON.parse(localStorage.getItem("linkgh_saved_jobs") || "[]");
+    setSaved(savedJobs.includes(job.id));
+  }, [job.id]);
+
+  function toggleSave() {
+    const savedJobs = JSON.parse(localStorage.getItem("linkgh_saved_jobs") || "[]");
+
+    let updatedJobs;
+
+    if (savedJobs.includes(job.id)) {
+      updatedJobs = savedJobs.filter((id: number) => id !== job.id);
+      setSaved(false);
+    } else {
+      updatedJobs = [...savedJobs, job.id];
+      setSaved(true);
+    }
+
+    localStorage.setItem("linkgh_saved_jobs", JSON.stringify(updatedJobs));
+  }
   const urgent = isUrgent(job.deadline);
 
   return (
@@ -243,10 +250,10 @@ function JobCard({ job, accent }: { job: MockJob; accent: string }) {
         </div>
 
         <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 12 }}>
-          <a href={job.applyUrl} className="btn" style={{ ...GLASS_STYLES.interactive, flex: 1, textAlign: "center", padding: "10px 16px", borderRadius: 10, fontSize: 12, color: "#FFF", textDecoration: "none", fontWeight: 600, display: "block" }}>
+          <a href={`/jobs/${job.id}`} target="_blank" rel="noopener noreferrer" className="btn" style={{ ...GLASS_STYLES.interactive, flex: 1, textAlign: "center", padding: "10px 16px", borderRadius: 10, fontSize: 12, color: "#FFF", textDecoration: "none", fontWeight: 600, display: "block" }}>
             Apply Externally ↗
           </a>
-          <button onClick={() => setSaved(!saved)} aria-label="Save job" style={{ ...GLASS_STYLES.interactive, width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 10, cursor: "pointer", color: saved ? accent : "rgba(255,255,255,0.4)", fontSize: 16 }}>
+          <button onClick={toggleSave} aria-label="Save job" style={{ ...GLASS_STYLES.interactive, width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 10, cursor: "pointer", color: saved ? accent : "rgba(255,255,255,0.4)", fontSize: 16 }}>
             {saved ? "★" : "☆"}
           </button>
         </div>
@@ -261,10 +268,9 @@ function CredentialCard({ cred, accent }: { cred: CredentialBody; accent: string
       <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(255,255,255,0.03)", border: `1px solid ${accent}40`, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: 4 }}>
         {cred.logoImg ? (
           <img src={cred.logoImg} alt={cred.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} onError={(e) => {
-            // Fallback back to text display if the image cannot look up cleanly
-            (e.target as HTMLElement).style.display = 'none';
+            (e.target as HTMLElement).style.display = "none";
             const fallback = document.getElementById(`fallback-${cred.name}`);
-            if (fallback) fallback.style.display = 'block';
+            if (fallback) fallback.style.display = "block";
           }} />
         ) : null}
         <span id={`fallback-${cred.name}`} style={{ display: cred.logoImg ? "none" : "block", fontFamily: "Inter", fontSize: 13, fontWeight: 800, color: accent }}>{cred.name}</span>
@@ -301,21 +307,47 @@ function ProfBodyCard({ u, accent }: { u: BodyUpdate; accent: string }) {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════════════
-   PRIMARY INDEPENDENT PAGE DOMAINS
-══════════════════════════════════════════════════════════════════════════ */
-
-/* ── DOMAIN A: ENTERPRISE ECOSYSTEM INDEX (HOME / PLATFORM HUB) ── */
 function HomePage({ activeCategory, onCategoryChange }: { activeCategory: string; onCategoryChange: (c: string) => void }) {
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [jobs, setJobs] = useState<MockJob[]>(FALLBACK_JOBS);
+
+  useEffect(() => {
+    async function loadJobs() {
+      try {
+        const res = await fetch("/api/jobs");
+        const data = await res.json();
+
+        const normalizedJobs: MockJob[] = data.map((job: any) => ({
+          id: job.id,
+          title: job.title,
+          company: job.company,
+          location: job.location,
+          jobType: job.type || job.jobType || "Full-time",
+          salary: job.salary || null,
+          deadline: job.deadline || null,
+          applyUrl: job.applyUrl || "#",
+          isVerified: job.verified ?? job.isVerified ?? true,
+          category: job.category || "Other Jobs",
+          featured: job.featured || false,
+        }));
+
+        setJobs(normalizedJobs);
+      } catch (error) {
+        console.error("Failed to load jobs:", error);
+        setJobs(FALLBACK_JOBS);
+      }
+    }
+
+    loadJobs();
+  }, []);
 
   const filteredJobs = useMemo(() => {
-    return MOCK_JOBS.filter(job => {
+    return jobs.filter(job => {
       const matchesCategory = activeCategory === "All" || job.category === activeCategory;
       const matchesSearch = job.title.toLowerCase().includes(searchQuery.toLowerCase()) || job.company.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
     });
-  }, [activeCategory, searchQuery]);
+  }, [activeCategory, searchQuery, jobs]);
 
   return (
     <div className="page-enter">
@@ -327,7 +359,7 @@ function HomePage({ activeCategory, onCategoryChange }: { activeCategory: string
               <span style={{ fontSize: 11, fontWeight: 700, color: "#FFF", letterSpacing: "0.06em" }}>GHANA WORKPLACE ARCHITECTURE</span>
             </div>
             <h1 style={{ fontSize: "clamp(34px, 4.5vw, 56px)", fontWeight: 900, color: "#FFF", lineHeight: 1.1, letterSpacing: "-1px", margin: "0 0 24px 0" }}>
-              Connecting Ghana's <span style={{ color: "#0A79A4" }}>Professional</span> Infrastructure.
+              Connecting Ghana&apos;s <span style={{ color: "#0A79A4" }}>Professional</span> Infrastructure.
             </h1>
             <p style={{ fontSize: 16, color: "rgba(255,255,255,0.8)", lineHeight: 1.6, maxWidth: 520, margin: "0 0 36px 0" }}>
               The premium corporate identity directory and automated job tracking engine for authorized professional bodies in West Africa.
@@ -354,7 +386,7 @@ function HomePage({ activeCategory, onCategoryChange }: { activeCategory: string
               <span style={{ fontSize: 10, color: "#219777", background: "rgba(33,151,119,0.2)", border: "1px solid rgba(33,151,119,0.4)", padding: "3px 10px", borderRadius: 6, fontWeight: 700 }}>TELEMETRY ONLINE</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {MOCK_JOBS.slice(0, 4).map((j, idx) => (
+              {jobs.slice(0, 4).map((j, idx) => (
                 <div key={j.id} style={{ ...GLASS_STYLES.interactive, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", borderRadius: 12 }}>
                   <div>
                     <p style={{ fontSize: 14, fontWeight: 700, color: "#FFF", margin: 0 }}>{j.title}</p>
@@ -402,7 +434,6 @@ function HomePage({ activeCategory, onCategoryChange }: { activeCategory: string
   );
 }
 
-/* ── DOMAIN B: VERIFIED ROSTER ARCHITECTURE (PROFESSIONALS / LEDGER) ── */
 function ProfessionalsPage() {
   const [profileSearch, setProfileSearch] = useState<string>("");
 
@@ -434,15 +465,12 @@ function ProfessionalsPage() {
                 <div style={{ height: 3, background: ac }} />
                 <div style={{ padding: 24, display: "flex", flexDirection: "column", flex: 1 }}>
                   <div style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 18 }}>
-                    
-                    {/* Component now pulls from your custom folder paths smoothly */}
                     <div style={{ width: 46, height: 46, borderRadius: "50%", background: "rgba(255,255,255,0.05)", border: `1px solid ${ac}40`, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
                       {p.avatarImg ? (
                         <img src={p.avatarImg} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => {
-                          // Clean textual fallback if a local asset file goes missing
-                          (e.target as HTMLElement).style.display = 'none';
+                          (e.target as HTMLElement).style.display = "none";
                           const labelEl = document.getElementById(`avatar-txt-${p.name}`);
-                          if (labelEl) labelEl.style.display = 'block';
+                          if (labelEl) labelEl.style.display = "block";
                         }} />
                       ) : null}
                       <span id={`avatar-txt-${p.name}`} style={{ display: p.avatarImg ? "none" : "block", color: ac, fontWeight: 800, fontSize: 14 }}>{p.avatarSeed}</span>
@@ -486,7 +514,6 @@ function ProfessionalsPage() {
   );
 }
 
-/* ── DOMAIN C: INDUSTRIAL INTELLIGENCE STREAM (FEED) ── */
 function FeedPage() {
   const [likesState, setLikesState] = useState<Record<string, number>>({});
 
@@ -536,7 +563,6 @@ function FeedPage() {
           })}
         </div>
 
-        {/* Right Sidebar Dashboard Grid */}
         <div>
           <div style={{ ...GLASS_STYLES.container, borderRadius: 24, padding: 24, position: "sticky", top: 100 }}>
             <h4 style={{ fontSize: 13, fontWeight: 800, color: "#FFF", margin: "0 0 18px 0", textTransform: "uppercase", letterSpacing: "0.06em" }}>RECOGNIZED FRAMEWORKS</h4>
@@ -552,12 +578,20 @@ function FeedPage() {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════════════
-   ROOT CENTRAL ENGINE RUNTIME EXPORT
-══════════════════════════════════════════════════════════════════════════ */
 export default function LinkGH() {
   const [page, setPage] = useState<Page>("home");
   const [activeCategory, setActiveCategory] = useState<string>("All");
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    async function loadUser() {
+      const { data } = await supabase.auth.getUser();
+      if (data.user) {
+        setUser(data.user);
+      }
+    }
+    loadUser();
+  }, []);
 
   const executeSystemNavigation = (destination: Page) => {
     setPage(destination);
@@ -568,11 +602,9 @@ export default function LinkGH() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#04070D", color: "#FFF", display: "flex", flexDirection: "column", fontFamily: "var(--font-body, system-ui, -apple-system, sans-serif)" }}>
-      
       <header style={{ position: "sticky", top: 0, zIndex: 1000, background: "rgba(4, 7, 13, 0.65)", backdropFilter: "blur(24px) saturate(140%)", WebkitBackdropFilter: "blur(24px) saturate(140%)", borderBottom: "1px solid rgba(255,255,255,0.12)" }}>
         <GlowBar />
         <div className="page-wrap" style={{ height: 68, display: "flex", alignItems: "center", justifyContent: "space-between", margin: "0 auto", padding: "0 24px", maxWidth: 1200 }}>
-          
           <div style={{ display: "flex", alignItems: "baseline", cursor: "pointer", userSelect: "none" }} onClick={() => executeSystemNavigation("home")}>
             <span style={{ fontFamily: "Inter", fontSize: 22, fontWeight: 900, color: "#FFF", letterSpacing: "-0.5px" }}>Link</span>
             <span style={{ fontFamily: "Inter", fontSize: 22, fontWeight: 900, color: "#0A79A4", letterSpacing: "-0.5px" }}>GH</span>
@@ -590,8 +622,58 @@ export default function LinkGH() {
           </nav>
 
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <button style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#FFF", padding: "8px 16px", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Sign In</button>
-            <button style={{ background: "#0A79A4", border: "none", color: "#FFF", padding: "8px 20px", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Join System</button>
+            <a
+              href="/dashboard"
+              style={{
+                color: "white",
+                textDecoration: "none",
+                padding: "10px 18px",
+                border: "1px solid rgba(255,255,255,0.15)",
+                borderRadius: 12,
+                marginRight: 12,
+              }}
+            >
+              Saved Jobs
+            </a>
+            {user ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+                <div>
+                  <div style={{ fontWeight: 700 }}>
+                    {user.user_metadata?.full_name || "LinkGH User"}
+                  </div>
+                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)" }}>
+                    {user.email}
+                  </div>
+                </div>
+                <a href="/dashboard" style={{ background: "#0A79A4", color: "white", padding: "8px 16px", borderRadius: 10, textDecoration: "none" }}>
+                  Dashboard
+                </a>
+                <button
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    window.location.href = "/";
+                  }}
+                  style={{ background: "#8B0000", color: "white", border: "none", padding: "8px 16px", borderRadius: 10, cursor: "pointer" }}
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <>
+                <a
+                  href="/login"
+                  style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#FFF", padding: "8px 16px", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: "pointer", textDecoration: "none" }}
+                >
+                  Sign In
+                </a>
+                <a
+                  href="/register"
+                  style={{ background: "#0A79A4", border: "none", color: "#FFF", padding: "8px 20px", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer", textDecoration: "none" }}
+                >
+                  Join System
+                </a>
+              </>
+            )}
           </div>
         </div>
       </header>
