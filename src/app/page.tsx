@@ -208,26 +208,48 @@ function SearchIcon() {
 
 function JobCard({ job, accent }: { job: MockJob; accent: string }) {
   const [saved, setSaved] = useState<boolean>(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const savedJobs = JSON.parse(localStorage.getItem("linkgh_saved_jobs") || "[]");
-    setSaved(savedJobs.includes(job.id));
+    async function init() {
+      const { data } = await supabase.auth.getUser();
+      const uid = data.user?.id ?? null;
+      setUserId(uid);
+      const jobId = String(job.id);
+      if (uid) {
+        // Load from Supabase
+        const { data: row } = await supabase
+          .from("saved_jobs")
+          .select("id")
+          .eq("user_id", uid)
+          .eq("job_id", jobId)
+          .maybeSingle();
+        setSaved(!!row);
+      } else {
+        // Fallback: localStorage (not logged in)
+        const ls = JSON.parse(localStorage.getItem("linkgh_saved_jobs") || "[]");
+        setSaved(ls.includes(job.id));
+      }
+    }
+    init();
   }, [job.id]);
 
-  function toggleSave() {
-    const savedJobs = JSON.parse(localStorage.getItem("linkgh_saved_jobs") || "[]");
-
-    let updatedJobs;
-
-    if (savedJobs.includes(job.id)) {
-      updatedJobs = savedJobs.filter((id: number) => id !== job.id);
-      setSaved(false);
+  async function toggleSave() {
+    const jobId = String(job.id);
+    if (userId) {
+      if (saved) {
+        await supabase.from("saved_jobs").delete().eq("user_id", userId).eq("job_id", jobId);
+      } else {
+        await supabase.from("saved_jobs").insert({ user_id: userId, job_id: jobId });
+      }
+      setSaved(!saved);
     } else {
-      updatedJobs = [...savedJobs, job.id];
-      setSaved(true);
+      // Fallback: localStorage
+      const ls = JSON.parse(localStorage.getItem("linkgh_saved_jobs") || "[]");
+      const updated = saved ? ls.filter((id: number) => id !== job.id) : [...ls, job.id];
+      localStorage.setItem("linkgh_saved_jobs", JSON.stringify(updated));
+      setSaved(!saved);
     }
-
-    localStorage.setItem("linkgh_saved_jobs", JSON.stringify(updatedJobs));
   }
   const urgent = isUrgent(job.deadline);
 
@@ -684,18 +706,8 @@ export default function LinkGH() {
         {page === "feed" && <FeedPage />}
       </main>
 
-      <footer style={{ borderTop: "1px solid rgba(255,255,255,0.08)", background: "rgba(4,7,13,0.95)", backdropFilter: "blur(12px)", padding: "32px 0" }}>
-        <div className="page-wrap" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1200, margin: "0 auto", padding: "0 24px", fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontWeight: 800, color: "#FFF" }}>LinkGH</span>
-            <span>by OrbitLinked Architecture Engine</span>
-          </div>
-          <div style={{ display: "flex", gap: 24 }}>
-            <span>Infrastructure Policies</span>
-            <span>Terms of Registry</span>
-            <span>© {new Date().getFullYear()} OrbitLinked.</span>
-          </div>
-        </div>
+      <footer style={{ borderTop: "1px solid rgba(255,255,255,0.08)", padding: "24px", textAlign: "center", fontSize: 13, color: "rgba(255,255,255,0.3)" }}>
+        © {new Date().getFullYear()} LinkGH. All rights reserved.
       </footer>
     </div>
   );
